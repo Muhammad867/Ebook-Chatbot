@@ -19,10 +19,10 @@ def extract_text_from_pdf(file_path):
     return text
 
 
-ebook_text = extract_text_from_pdf("ebook.pdf")
+ebook_text = extract_text_from_pdf("CS-324 ML Topic 1 - Introduction to Machine Learning.pdf")
 
 
-def split_into_chunks(text, chunk_size=300):
+def split_into_chunks(text, chunk_size=256):
     words = text.split()
     chunks = [" ".join(words[i:i+chunk_size]) for i in range(0, len(words), chunk_size)]
     return chunks
@@ -37,14 +37,17 @@ def get_embeddings(text):
 
 chunks_embeddings = [get_embeddings(chunk) for chunk in chunks]
 
-def find_chunk(query, chunks, chunks_embeddings):
+def find_chunk(query, chunks, chunks_embeddings, threshold=0.3):
     embedded_query = get_embeddings(query)
     similarities = cosine_similarity([embedded_query], chunks_embeddings)
+    max_similarity = np.max(similarities)
+    if max_similarity < threshold:
+        return None, max_similarity
     most_similar_chunk = np.argmax(similarities)
-    return chunks[most_similar_chunk]
+    return chunks[most_similar_chunk], max_similarity
 
 user_query = input("Enter your query: ")
-relevant_chunk = find_chunk(user_query, chunks, chunks_embeddings)
+relevant_chunk, similarity_score = find_chunk(user_query, chunks, chunks_embeddings)
 
 
 
@@ -57,5 +60,9 @@ def generate_response(query, context):
     return answer
 
 
-response = generate_response(user_query, relevant_chunk)
-print(response)
+
+if relevant_chunk is None:
+    print("Sorry, I couldn't find relevant content. Could you rephrase or ask about another topic?")
+else:
+    response = generate_response(user_query, relevant_chunk)
+    print(response)
